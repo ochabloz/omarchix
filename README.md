@@ -125,6 +125,29 @@ The simplest workflow for developing omarchix without committing:
 - `desktop.wallpaper`: Path to wallpaper image (optional)
 - `desktop.idleSuspend`: Enable system suspend after idle timeout (default: false)
 
+#### Greetd Display Manager Options
+
+- `desktop.greetd.enable`: Enable greetd display manager (default: true)
+- `desktop.greetd.autoDetectSessions`: Auto-detect all available desktop sessions (default: true). When enabled, tuigreet will present all installed sessions instead of launching a specific one.
+- `desktop.greetd.command`: Default session command when autoDetectSessions is false (default: null, falls back to "hyprland")
+- `desktop.greetd.sleepDelay`: Delay in seconds before starting tuigreet (default: 3). Prevents boot logs from overlaying the login interface.
+
+**Example configurations:**
+
+```nix
+# Auto-detect sessions (default, recommended for multi-DE setups)
+desktop.greetd.autoDetectSessions = true;
+
+# Force a specific desktop environment
+desktop.greetd = {
+  autoDetectSessions = false;
+  command = "sway";  # or "hyprland", "gnome-session", etc.
+};
+
+# Disable greetd entirely (use another display manager)
+desktop.greetd.enable = false;
+```
+
 ### Nixvim Module
 
 Nixvim automatically inherits the theme from `desktop.theme` and requires no additional configuration. It includes:
@@ -154,6 +177,20 @@ Themes are applied consistently across:
 - Walker launcher
 - SwayOSD
 - Hyprland borders
+
+## Wallpapers
+
+Wallpapers are automatically fetched from the [omarchy repository](https://github.com/basecamp/omarchy) during system build. Each theme has a corresponding wallpaper collection in `/themes/[theme_name]/backgrounds`.
+
+The system:
+- Fetches wallpapers using `pkgs.fetchFromGitHub` with sparse checkout for efficiency
+- Copies theme-matching wallpapers to `/etc/olynix/themes/wallpapers` during activation
+- Initializes a symlink at `~/.local/state/olynix/current_background` pointing to the first wallpaper
+- Provides the `wallpaper-set` command to cycle through wallpapers:
+  - `wallpaper-set` - Display current wallpaper
+  - `wallpaper-set next` - Switch to next wallpaper in the collection
+
+**Note:** On first build, Nix will prompt you to add the correct hash for the omarchy repository. This is normal - just copy the suggested hash into `desktop/hyprland.nix` and rebuild.
 
 ## Advanced Options
 

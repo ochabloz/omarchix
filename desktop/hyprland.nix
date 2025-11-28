@@ -3,6 +3,15 @@
 with lib;
 
 let
+  # Fetch wallpapers from omarchy repository
+  omarchyThemes = pkgs.fetchFromGitHub {
+    owner = "basecamp";
+    repo = "omarchy";
+    rev = "master";
+    sha256 = "";  # Nix will calculate this on first build
+    sparseCheckout = [ "themes" ];
+  };
+
   cfg = config.desktop;
 in
 {
@@ -58,6 +67,33 @@ in
       description = "System theme name (used for neovim and other applications)";
       example = "nord";
     };
+
+    greetd = {
+      enable = mkOption {
+        type = types.bool;
+        default = true;
+        description = "Enable greetd display manager";
+      };
+
+      autoDetectSessions = mkOption {
+        type = types.bool;
+        default = true;
+        description = "Auto-detect available desktop sessions. When enabled, tuigreet will show all available sessions instead of hardcoding one.";
+      };
+
+      command = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        example = "hyprland";
+        description = "Default command to launch (used with --cmd flag). Only used when autoDetectSessions is false.";
+      };
+
+      sleepDelay = mkOption {
+        type = types.int;
+        default = 3;
+        description = "Delay in seconds before starting tuigreet (prevents log messages from overlaying the interface)";
+      };
+    };
   };
 
   config = mkIf (cfg.enable) {
@@ -70,13 +106,23 @@ in
       #package = inputs.hyprland.packages.${pkgs.system}.hyprland;
     };
 
-    services.greetd = {
+    services.greetd = mkIf cfg.greetd.enable {
       enable = true;
       settings = {
-        default_session = {
-          command = "${pkgs.bash}/bin/bash -c 'sleep 3; exec ${pkgs.tuigreet}/bin/tuigreet --time -r --remember-user-session --cmd hyprland'";
-          user = "greeter";
-        };
+        default_session =
+          let
+            # Build tuigreet command based on configuration
+            baseFlags = "--time -r --remember-user-session";
+            cmdFlag =
+              if cfg.greetd.autoDetectSessions then ""
+              else if cfg.greetd.command != null then "--cmd ${cfg.greetd.command}"
+              else "--cmd hyprland";  # backward compatibility
+            tuigreetCmd = "${pkgs.tuigreet}/bin/tuigreet ${baseFlags} ${cmdFlag}";
+          in
+          {
+            command = "${pkgs.bash}/bin/bash -c 'sleep ${toString cfg.greetd.sleepDelay}; exec ${tuigreetCmd}'";
+            user = "greeter";
+          };
       };
     };
 
@@ -113,7 +159,7 @@ in
 
     # Copy wallpapers to /etc/olynix/themes/wallpapers
     system.activationScripts.copyWallpapers = ''
-      WALLPAPER_SRC="/etc/nixos/themes/wallpapers/${cfg.theme}"
+      WALLPAPER_SRC="${omarchyThemes}/themes/${cfg.theme}/backgrounds"
       WALLPAPER_DST="/etc/olynix/themes/wallpapers"
 
       if [ -d "$WALLPAPER_SRC" ]; then
