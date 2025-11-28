@@ -125,6 +125,29 @@ The simplest workflow for developing omarchix without committing:
 - `desktop.wallpaper`: Path to wallpaper image (optional)
 - `desktop.idleSuspend`: Enable system suspend after idle timeout (default: false)
 
+#### Greetd Display Manager Options
+
+- `desktop.greetd.enable`: Enable greetd display manager (default: true)
+- `desktop.greetd.autoDetectSessions`: Auto-detect all available desktop sessions (default: true). When enabled, tuigreet will present all installed sessions instead of launching a specific one.
+- `desktop.greetd.command`: Default session command when autoDetectSessions is false (default: null, falls back to "hyprland")
+- `desktop.greetd.sleepDelay`: Delay in seconds before starting tuigreet (default: 3). Prevents boot logs from overlaying the login interface.
+
+**Example configurations:**
+
+```nix
+# Auto-detect sessions (default, recommended for multi-DE setups)
+desktop.greetd.autoDetectSessions = true;
+
+# Force a specific desktop environment
+desktop.greetd = {
+  autoDetectSessions = false;
+  command = "sway";  # or "hyprland", "gnome-session", etc.
+};
+
+# Disable greetd entirely (use another display manager)
+desktop.greetd.enable = false;
+```
+
 ### Nixvim Module
 
 Nixvim automatically inherits the theme from `desktop.theme` and requires no additional configuration. It includes:
