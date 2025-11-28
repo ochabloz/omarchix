@@ -3,6 +3,15 @@
 with lib;
 
 let
+  # Fetch wallpapers from omarchy repository
+  omarchyThemes = pkgs.fetchFromGitHub {
+    owner = "basecamp";
+    repo = "omarchy";
+    rev = "master";
+    sha256 = "";  # Nix will calculate this on first build
+    sparseCheckout = [ "themes" ];
+  };
+
   cfg = config.desktop;
 in
 {
@@ -113,7 +122,7 @@ in
 
     # Copy wallpapers to /etc/olynix/themes/wallpapers
     system.activationScripts.copyWallpapers = ''
-      WALLPAPER_SRC="/etc/nixos/themes/wallpapers/${cfg.theme}"
+      WALLPAPER_SRC="${omarchyThemes}/themes/${cfg.theme}/backgrounds"
       WALLPAPER_DST="/etc/olynix/themes/wallpapers"
 
       if [ -d "$WALLPAPER_SRC" ]; then

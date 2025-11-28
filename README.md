@@ -155,6 +155,20 @@ Themes are applied consistently across:
 - SwayOSD
 - Hyprland borders
 
+## Wallpapers
+
+Wallpapers are automatically fetched from the [omarchy repository](https://github.com/basecamp/omarchy) during system build. Each theme has a corresponding wallpaper collection in `/themes/[theme_name]/backgrounds`.
+
+The system:
+- Fetches wallpapers using `pkgs.fetchFromGitHub` with sparse checkout for efficiency
+- Copies theme-matching wallpapers to `/etc/olynix/themes/wallpapers` during activation
+- Initializes a symlink at `~/.local/state/olynix/current_background` pointing to the first wallpaper
+- Provides the `wallpaper-set` command to cycle through wallpapers:
+  - `wallpaper-set` - Display current wallpaper
+  - `wallpaper-set next` - Switch to next wallpaper in the collection
+
+**Note:** On first build, Nix will prompt you to add the correct hash for the omarchy repository. This is normal - just copy the suggested hash into `desktop/hyprland.nix` and rebuild.
+
 ## Advanced Options
 
 ### Pinning to a Specific Commit
