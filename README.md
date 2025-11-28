@@ -9,44 +9,22 @@ NixOS configuration modules with sensible defaults for desktop environments and 
 
 ## Usage
 
-### Using with Flakes (Recommended)
+### Basic Setup
 
-#### 1. Add omarchix to your flake inputs
-
-In your main NixOS configuration's `flake.nix`:
-
-```nix
-{
-  inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    omarchix.url = "github:YOUR_USERNAME/omarchix";
-    # For local development (see below)
-    # omarchix.url = "path:/path/to/omarchix";
-  };
-
-  outputs = { self, nixpkgs, omarchix, ... }: {
-    nixosConfigurations.your-hostname = nixpkgs.lib.nixosSystem {
-      system = "x86_64-linux";
-      modules = [
-        ./configuration.nix
-        # Import all modules
-        omarchix.nixosModules.default
-        # OR import specific modules
-        # omarchix.nixosModules.desktop
-        # omarchix.nixosModules.nixvim
-      ];
-    };
-  };
-}
-```
-
-#### 2. Configure the modules in your `configuration.nix`
+In your `/etc/nixos/configuration.nix`:
 
 ```nix
 { config, pkgs, ... }:
 
 {
-  # Enable desktop environment
+  imports = [
+    /path/to/omarchix  # Import all modules
+    # OR import specific modules:
+    # /path/to/omarchix/desktop/hyprland.nix
+    # /path/to/omarchix/nixvim/nixvim.nix
+  ];
+
+  # Enable and configure desktop environment
   desktop = {
     enable = true;
     username = "yourusername";
@@ -60,27 +38,26 @@ In your main NixOS configuration's `flake.nix`:
 }
 ```
 
-### Using without Flakes
+Then rebuild:
+```bash
+sudo nixos-rebuild switch
+```
 
-In your `/etc/nixos/configuration.nix`:
+### Using from GitHub
+
+If you want to pull from GitHub instead of a local path:
 
 ```nix
 { config, pkgs, ... }:
 
 let
   omarchix = builtins.fetchGit {
-    url = "https://github.com/YOUR_USERNAME/omarchix";
-    ref = "main";
+    url = "https://github.com/ochabloz/omarchix";
+    ref = "main";  # or specify a branch/tag
   };
 in
 {
-  imports = [
-    # Import all modules
-    omarchix
-    # OR import specific modules
-    # "${omarchix}/desktop/hyprland.nix"
-    # "${omarchix}/nixvim/nixvim.nix"
-  ];
+  imports = [ omarchix ];
 
   desktop = {
     enable = true;
@@ -90,114 +67,50 @@ in
 }
 ```
 
+**Note**: `fetchGit` will fetch the latest version on each rebuild. For pinning to specific commits, see the Advanced Options section below.
+
 ## Local Development
 
-For local development without committing/pushing changes, use a local path reference:
+The simplest workflow for developing omarchix without committing:
 
-### Method 1: Local Flake Input (Recommended)
-
-In your main configuration's `flake.nix`, change the input to a local path:
-
-```nix
-{
-  inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    omarchix.url = "path:/home/yourusername/path/to/omarchix";
-    # OR use relative path
-    # omarchix.url = "path:../omarchix";
-  };
-
-  # ... rest of your flake config
-}
-```
-
-Then rebuild normally:
-
-```bash
-sudo nixos-rebuild switch --flake .#your-hostname
-```
-
-**Important**: Changes to the local omarchix directory are picked up immediately. You don't need to commit or push to test your changes.
-
-### Method 2: Direct Import (without Flakes)
-
-In your `/etc/nixos/configuration.nix`:
-
-```nix
-{ config, pkgs, ... }:
-
-{
-  imports = [
-    /home/yourusername/path/to/omarchix
-    # OR
-    # /home/yourusername/path/to/omarchix/desktop/hyprland.nix
-    # /home/yourusername/path/to/omarchix/nixvim/nixvim.nix
-  ];
-
-  desktop = {
-    enable = true;
-    username = "yourusername";
-  };
-}
-```
-
-Rebuild:
-
-```bash
-sudo nixos-rebuild switch
-```
-
-### Method 3: NIX_PATH Override
-
-Set `NIX_PATH` to include your local development directory:
-
-```bash
-sudo nixos-rebuild switch -I omarchix=/home/yourusername/path/to/omarchix
-```
-
-Then in your configuration:
-
-```nix
-{ config, pkgs, ... }:
-
-{
-  imports = [
-    <omarchix>
-  ];
-}
-```
-
-### Switching Between Local and Remote
-
-When you're done developing and want to use the committed version:
-
-1. **Commit and push your changes**:
+1. **Clone this repository** somewhere on your system:
    ```bash
-   cd /path/to/omarchix
+   git clone https://github.com/ochabloz/omarchix ~/omarchix
+   ```
+
+2. **Point your configuration** to the local path:
+   ```nix
+   {
+     imports = [ /home/yourusername/omarchix ];
+     desktop.enable = true;
+   }
+   ```
+
+3. **Make changes** to the omarchix files
+
+4. **Test immediately**:
+   ```bash
+   sudo nixos-rebuild switch
+   ```
+
+5. **Iterate** - changes are picked up instantly, no commits needed!
+
+6. **When satisfied**, commit and push:
+   ```bash
+   cd ~/omarchix
    git add .
    git commit -m "Your changes"
    git push
    ```
 
-2. **Switch back to git reference** in your main flake:
-   ```nix
-   omarchix.url = "github:YOUR_USERNAME/omarchix";
-   ```
+7. **Optionally switch to GitHub reference** in your main config
 
-3. **Update the flake lock**:
-   ```bash
-   nix flake update omarchix
-   ```
+### Development Tips
 
-## Development Workflow
-
-1. **Clone this repo** to your local machine
-2. **Point your main config** to the local path (using one of the methods above)
-3. **Make changes** to omarchix modules
-4. **Test immediately** with `sudo nixos-rebuild switch`
-5. **Iterate** without committing
-6. **When satisfied**, commit and push your changes
-7. **Optionally**, switch back to git reference in your main config
+- Keep the absolute path import (`/home/you/omarchix`) during development
+- Changes to any `.nix` file are immediately available on rebuild
+- No need to update lockfiles or flake inputs
+- Switch to `fetchGit` when you want a stable, committed version
 
 ## Available Options
 
@@ -241,6 +154,35 @@ Themes are applied consistently across:
 - Walker launcher
 - SwayOSD
 - Hyprland borders
+
+## Advanced Options
+
+### Pinning to a Specific Commit
+
+```nix
+let
+  omarchix = builtins.fetchGit {
+    url = "https://github.com/ochabloz/omarchix";
+    rev = "abc123...";  # specific commit hash
+  };
+in
+{ imports = [ omarchix ]; }
+```
+
+### Using NIX_PATH
+
+```bash
+sudo nixos-rebuild switch -I omarchix=/path/to/omarchix
+```
+
+Then in your configuration:
+```nix
+{ imports = [ <omarchix> ]; }
+```
+
+### Flakes Support
+
+If you prefer using flakes, you can add a `flake.nix` to this repository. The modules are already structured to work with flakes - just expose them as `nixosModules` in the flake outputs.
 
 ## Contributing
 
